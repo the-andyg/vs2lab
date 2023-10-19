@@ -4,6 +4,8 @@ Client and server using classes
 
 import logging
 import socket
+import random
+import json
 
 import const_cs
 from context import lab_logging
@@ -16,6 +18,10 @@ class Server:
     """ The server """
     _logger = logging.getLogger("vs2lab.lab1.clientserver.Server")
     _serving = True
+    # List of random first names
+    first_names = ["Alice", "Bob", "Charlie", "David", "Eva", "Frank", "Grace", "Hannah", "Ivy", "Jack",
+              "Kelly", "Liam", "Mia", "Nathan", "Olivia", "Peter", "Quinn", "Rachel", "Sam", "Tom"]
+    phone_book = {}
 
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,6 +29,10 @@ class Server:
         self.sock.bind((const_cs.HOST, const_cs.PORT))
         self.sock.settimeout(3)  # time out in order not to block forever
         self._logger.info("Server bound to socket " + str(self.sock))
+        for name in self.first_names:
+            # Generate a random fictional phone number (10 digits)
+            phone_number = ''.join([str(random.randint(0, 9)) for _ in range(10)])
+            self.phone_book[name] = phone_number
 
     def serve(self):
         """ Serve echo """
@@ -32,10 +42,17 @@ class Server:
                 # pylint: disable=unused-variable
                 (connection, address) = self.sock.accept()  # returns new socket and address of client
                 while True:  # forever
-                    data = connection.recv(1024)  # receive data from client
-                    if not data:
-                        break  # stop if client stopped
-                    connection.send(data + "*".encode('ascii'))  # return sent data plus an "*"
+                    data = connection.recv(1024).decode('ascii')  # receive data from client
+                    self._logger.info("Received DATA: " + data)
+                    if data.startswith("GET "):
+                        self._logger.info("Data starts with GET ")
+                        #split command and name to process later
+                        name = data.split(" ")[1]
+                        connection.send(self.phone_book[name].encode('ascii'))
+                    elif data.startswith("GETALL"):
+                        self._logger.info("Data starts with GETALL")
+                        #return serialized array
+                        connection.send(json.dumps(self.phone_book).encode('ascii'))
                 connection.close()  # close the connection
             except socket.timeout:
                 pass  # ignore timeouts
@@ -54,12 +71,15 @@ class Client:
 
     def call(self, msg_in="Hello, world"):
         """ Call server """
-        self.sock.send(msg_in.encode('ascii'))  # send encoded string as data
+        self.logger.info("Calling Server")
+        
+        self.sock.send(msg_in.encode('ascii'))
         data = self.sock.recv(1024)  # receive the response
         msg_out = data.decode('ascii')
-        print(msg_out)  # print the result
-        self.sock.close()  # close the connection
-        self.logger.info("Client down.")
+        self.logger.info("Received Message: " + msg_out)  # print the result
+
+        #self.sock.close()  # close the connection
+        #self.logger.info("Client down.")
         return msg_out
 
     def close(self):

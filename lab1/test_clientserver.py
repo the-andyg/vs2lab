@@ -5,6 +5,7 @@ Simple client server unit test
 import logging
 import threading
 import unittest
+import json
 
 import clientserver
 from context import lab_logging
@@ -25,10 +26,44 @@ class TestEchoService(unittest.TestCase):
         super().setUp()
         self.client = clientserver.Client()  # create new client for each test
 
-    def test_srv_get(self):  # each test_* function is a test
+    def test_srv_get_bb(self):  # each test_* function is a test
         """Test simple call"""
-        msg = self.client.call("Hello VS2Lab")
-        self.assertEqual(msg, 'Hello VS2Lab*')
+        msg = self.client.call("GET BB")
+        num = 0
+        for char in "BB":
+            num = num * 26 + (ord(char) - ord('A') + 1)
+        self.assertEqual(msg, str(num))
+
+    def test_srv_get_aa(self):  # each test_* function is a test
+        """Test simple call"""
+        msg = self.client.call("GET AA")
+        num = 0
+        for char in "AA":
+            num = num * 26 + (ord(char) - ord('A') + 1)
+        self.assertEqual(msg, str(num))
+
+    def test_srv_get_empty(self):  # each test_* function is a test
+        """Test simple call"""
+        msg = self.client.call("GET ZZ")
+        self.assertEqual(msg, '""')
+
+    def test_srv_get_all(self): # each test_* function is a test
+        """Test simple call"""
+        msg = self.client.call("GETALL")
+        first_names = []
+        phone_book = {}
+        for i in range(5):
+            letterone = chr(ord('A') + i )
+            for j in range(5):
+                lettertwo = chr(ord('A') + j)
+                name = letterone + lettertwo
+                first_names.append(name)
+        for name in first_names:
+            num = 0
+            for char in name:
+                num = num * 26 + (ord(char) - ord('A') + 1)
+            phone_book[name] = str(num)
+        self.assertEqual(msg, str(phone_book))
 
     def tearDown(self):
         self.client.close()  # terminate client after each test

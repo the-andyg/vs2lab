@@ -1,4 +1,5 @@
 import constRPC
+import threading
 
 from context import lab_channel
 
@@ -25,11 +26,18 @@ class Client:
     def stop(self):
         self.chan.leave('client')
 
+    def receiveCallback(self, result):
+        msgrcv = self.chan.receive_from(self.server)  # wait for response
+        return msgrcv[1]
+
+
     def append(self, data, db_list):
         assert isinstance(db_list, DBList)
         msglst = (constRPC.APPEND, data, db_list)  # message payload
         self.chan.send_to(self.server, msglst)  # send msg to server
-        msgrcv = self.chan.receive_from(self.server)  # wait for response
+        thread = threading.Thread(target=self.receiveCallback)
+        thread.start()
+        #msgrcv = self.chan.receive_from(self.server)  # wait for response
         return msgrcv[1]  # pass it to caller
 
 

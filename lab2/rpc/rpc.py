@@ -1,5 +1,6 @@
 import constRPC
 import threading
+import time
 
 from context import lab_channel
 
@@ -14,6 +15,9 @@ class DBList:
 
 
 class Client:
+
+    result = ''
+
     def __init__(self):
         self.chan = lab_channel.Channel()
         self.client = self.chan.join('client')
@@ -27,19 +31,26 @@ class Client:
         self.chan.leave('client')
 
     def receiveCallback(self, result):
-        msgrcv = self.chan.receive_from(self.server)  # wait for response
-        return msgrcv[1]
+        #print("Result is: " + result[1])
+        self.result = result[1]
 
+    def rpc_request(self):
+        result = self.chan.receive_from(self.server)  # wait for response
+        self.receiveCallback(result)
 
     def append(self, data, db_list):
         assert isinstance(db_list, DBList)
         msglst = (constRPC.APPEND, data, db_list)  # message payload
         self.chan.send_to(self.server, msglst)  # send msg to server
-        thread = threading.Thread(target=self.receiveCallback)
-        thread.start()
-        #msgrcv = self.chan.receive_from(self.server)  # wait for response
-        return msgrcv[1]  # pass it to caller
+        asyncThread = threading.Thread(target=self.rpc_request)
+        asyncThread.start()
 
+        for i in range(0, 5):   #only to show concurrency
+            time.sleep(1)
+            print("cumming in: " +str(5-i))
+
+        asyncThread.join()
+        return self.result
 
 class Server:
     def __init__(self):
@@ -49,6 +60,7 @@ class Server:
 
     @staticmethod
     def append(data, db_list):
+        time.sleep(5)
         assert isinstance(db_list, DBList)  # - Make sure we have a list
         return db_list.append(data)
 

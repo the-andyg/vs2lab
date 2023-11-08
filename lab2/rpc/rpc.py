@@ -86,7 +86,7 @@ class Server:
                 msgrpc = msgreq[1]  # fetch call & parameters
                 print("RPCAppend: " + constRPC.APPEND + ", msgrpc: " + msgrpc[0])
                 if constRPC.APPEND == msgrpc[0]:  # check what is being requested
-                    self.labChan.send_to({client}, "ACK") # send ACKnoledgement
+                    self.labChan.send_to(self.labChan.subgroup("lab_channel"), "ACK") # send ACKnoledgement
                     print("Sent ACK")
                     result = self.append(msgrpc[1], msgrpc[2])  # do local call
                     print("Sending actual result")

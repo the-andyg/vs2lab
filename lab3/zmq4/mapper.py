@@ -37,11 +37,11 @@ while True:
     for word in words:
         first_letter = word[0].lower()
         if first_letter <= 'k':
-            requester.send_string(word)  # send message and go on
+            requester.send_string(word.lower())  # send message and go on
             print("Sent {}".format(word))  # print ack
             message = requester.recv()  # block until response
         else:
-            requester2.send_string(word)  # send message and go on
+            requester2.send_string(word.lower())  # send message and go on
             print("Sent {}".format(word))  # print ack
             message = requester2.recv()  # block until response
     

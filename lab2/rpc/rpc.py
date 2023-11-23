@@ -55,10 +55,6 @@ class Client:
             asyncThread = threading.Thread(target=self.rpc_request)
             asyncThread.start()
 
-            for i in range(0, 10):   #only to show concurrency
-                time.sleep(1)
-                print("waiting for async result: " +str(10-i))
-
             asyncThread.join()
         return self.result
 

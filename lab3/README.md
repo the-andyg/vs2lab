@@ -108,7 +108,14 @@ Experiment nachverfolgen:
 
 **Aufgabe Lab3.1:** Erklären Sie das Verhalten der Systeme in den beiden
 Experimenten.
-
+1. Fall: schickt Hello world, wartet auf antwort, schickt wieder, wartet wieder und schickt wieder
+2. Fall:  beide können gleichzeitig schicken. Allerdings wird client1 zuerst komplett abgearbeitet.
+          Received Hello vs2lab
+          Received Hello vs2lab
+          Received Hello vs2lab
+          Received Hello world
+          Received Hello world
+          Received Hello world
 ### 2.2. Publish-Subscribe
 
 Mit dem Publish-Subscribe Muster lässt sich *1-n Kommunikation* (ein Sender, n
@@ -134,6 +141,9 @@ cd ~/git/vs2lab/lab3/zmq2 # angenommen hier liegt das vs2lab Repo
 
 **Aufgabe Lab3.2:** Erklären Sie das Verhalten der Systeme in den beiden
 Experimenten.
+
+1.Fall: Client holt sich 5 mal die Zeit vom Server
+2.Fall: Client 1 holt sich das heutige Datum während client sich immer noch die aktuelle Uhrzeit holt
 
 ### 2.3. Parallel Pipeline
 
@@ -173,6 +183,9 @@ Gehen sie nun wie folgt vor:
 
 **Aufgabe Lab3.3:** Erklären Sie das Verhalten der Systeme in den beiden
 Experimenten.
+
+1.Fall: Worker holt sich die ganze Zeit Tasks von den beiden Auftragsgebern und führt diese zukzessive aus
+2.Fall: Die beiden WOrker ziehen sich nach und nach die Aufgaben die der Auftragsgeber gedumped hat.
 
 ## 3 Aufgabe
 

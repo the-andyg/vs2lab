@@ -10,6 +10,7 @@ Chord Application
 import logging
 import sys
 import multiprocessing as mp
+import random
 
 import chordnode as chord_node
 import constChord
@@ -29,7 +30,14 @@ class DummyChordClient:
         self.channel.bind(self.node_id)
 
     def run(self):
-        print("Implement me pls...")
+        #print("Implement me pls...")
+        # Generate a random Key to search for and a node to send to. How to check if they are valid?
+        randomKey = random.random() * 8
+        randomNode = random.random() * 8
+
+        # send request to random node with random key
+        self.channel.send_to(randomNode, (constChord.LOOKUP_REQ, randomKey))
+
         self.channel.send_to(  # a final multicast
             {i.decode() for i in list(self.channel.channel.smembers('node'))},
             constChord.STOP)

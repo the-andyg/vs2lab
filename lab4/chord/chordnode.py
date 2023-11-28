@@ -112,6 +112,7 @@ class ChordNode:
                 return self.finger_table[i]  # key in [FT[i],FT[i+1])
         if self.in_between(key, self.finger_table[-1], self.finger_table[0] + 1): # key outside FT
             return self.finger_table[-1]  # key in [FT[-1],FT[0]]
+            
         assert False # we cannot be here
 
     def enter(self):
@@ -146,13 +147,19 @@ class ChordNode:
                                   .format(self.node_id, int(sender)))
                 break
 
+            #@TODO: Lookup recursively
             if request[0] == constChord.LOOKUP_REQ:  # A lookup request
                 self.logger.info("Node {:04n} received LOOKUP {:04n} from {:04n}."
                                  .format(self.node_id, int(request[1]), int(sender)))
 
                 # look up and return local successor 
                 next_id: int = self.local_successor_node(request[1])
-                self.channel.send_to([sender], (constChord.LOOKUP_REP, next_id))
+                if(request[1] != self.node_id):
+                    # if i am not the target node, recursively search for the actual node
+                    self.channel.send_to([sender], (constChord.LOOKUP_REQ, request[1]))
+                else:
+                    # else return my own address
+                    self.channel.send_to([sender], (constChord.LOOKUP_REP, request[1]))
 
                 # Finally do a sanity check
                 if not self.channel.exists(next_id):  # probe for existence

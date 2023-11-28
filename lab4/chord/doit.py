@@ -10,7 +10,7 @@ Chord Application
 import logging
 import sys
 import multiprocessing as mp
-import random
+from random import randint
 
 import chordnode as chord_node
 import constChord
@@ -25,22 +25,36 @@ class DummyChordClient:
     def __init__(self, channel):
         self.channel = channel
         self.node_id = channel.join('client')
+        #self.client_id = channel.join('node')
+        #print("joined node on id " + str(self.client_id))
 
     def enter(self):
         self.channel.bind(self.node_id)
+        #self.channel.bind(self.client_id)
 
     def run(self):
-        #print("Implement me pls...")
-        # Generate a random Key to search for and a node to send to. How to check if they are valid?
-        randomKey = random.random() * 8
-        randomNode = random.random() * 8
+        nodes = self.channel.channel.smembers('node')
+        nodes = list(map(lambda x: int(x.decode('utf-8')), nodes))
+        #print(channels)
+
+        # Generate a random Key to search for and a node to send to
+        randomKey = randint(0, 100)
+        randomNode = randint(0, 100)
+
+        while(randomNode not in nodes):
+            randomNode = randint(0, 100)
+
+        while(randomKey not in nodes):
+            randomKey = randint(0, 100)
+
+        print("\nlooking for random Key " + str(randomKey) + " on Node " + str(randomNode) + "\n")
 
         # send request to random node with random key
-        self.channel.send_to(randomNode, (constChord.LOOKUP_REQ, randomKey))
+        self.channel.send_to([str(randomNode)], (constChord.LOOKUP_REQ, randomKey))
 
-        self.channel.send_to(  # a final multicast
-            {i.decode() for i in list(self.channel.channel.smembers('node'))},
-            constChord.STOP)
+        # self.channel.send_to(  # a final multicast
+        #     {i.decode() for i in list(self.channel.channel.smembers('node'))},
+        #     constChord.STOP)
 
 
 def create_and_run(num_bits, node_class, enter_bar, run_bar):

@@ -36,14 +36,14 @@ class DummyChordClient:
         #print(channels)
 
         # Generate a random Key to search for and a node to send to
-        randomKey = randint(0, 100)
+        #randomKey = randint(0, 100)
         randomNode = randint(0, 100)
 
         while(randomNode not in nodes):
             randomNode = randint(0, 100)
 
-        while(randomKey not in nodes):
-            randomKey = randint(0, 100)
+        #while(randomKey not in nodes):
+        randomKey = randint(0, max(nodes))
 
         print("\nlooking for random Key " + str(randomKey) + " on Node " + str(randomNode) + "\n")
 

@@ -154,13 +154,14 @@ class ChordNode:
 
                 # look up and return local successor 
                 next_id: int = self.local_successor_node(request[1])
-                print("\nLOOKUP Received: Current ID: " + str(request[1]) + ", Next ID is: " + str(next_id))
-                if(request[1] != next_id):
+                if(request[1] != self.node_id):
                     # if i am not the target node, recursively search for the actual node
-                    print("\nNot the target. recursively looking for successor..")
+                    print("\nLOOKUP Received: Current ID: " + str(self.node_id) + ", Next ID is: " + str(next_id))
+
                     self.channel.send_to([str(next_id)], (constChord.LOOKUP_REQ, request[1]))
                 else:
                     # else return my own address
+                    print("\nLOOKUP Received: Current ID: " + str(self.node_id))
                     print("Matching Endpoint Found: " + str(request[1]))
                     self.channel.send_to([sender], (constChord.LOOKUP_REP, request[1]))
 

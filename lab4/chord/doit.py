@@ -25,8 +25,6 @@ class DummyChordClient:
     def __init__(self, channel):
         self.channel = channel
         self.node_id = channel.join('client')
-        #self.client_id = channel.join('node')
-        #print("joined node on id " + str(self.client_id))
 
     def enter(self):
         self.channel.bind(self.node_id)

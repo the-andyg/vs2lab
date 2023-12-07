@@ -43,16 +43,20 @@ class DummyChordClient:
             randomNode = randint(0, 100)
 
         #while(randomKey not in nodes):
-        randomKey = randint(0, max(nodes))
+        randomKey = randint(0, self.channel.MAXPROC)
 
         print("\nlooking for random Key " + str(randomKey) + " on Node " + str(randomNode) + "\n")
 
         # send request to random node with random key
-        self.channel.send_to([str(randomNode)], (constChord.LOOKUP_REQ, randomKey))
+        self.channel.send_to([str(randomNode)], (constChord.LOOKUP_REQ, randomKey, self.node_id))
 
-        # self.channel.send_to(  # a final multicast
-        #     {i.decode() for i in list(self.channel.channel.smembers('node'))},
-        #     constChord.STOP)
+        answer = self.channel.receive_from_any()[1]
+
+        print("Received: " + str(answer))
+
+        self.channel.send_to(  # a final multicast
+            {i.decode() for i in list(self.channel.channel.smembers('node'))},
+            constChord.STOP)
 
 
 def create_and_run(num_bits, node_class, enter_bar, run_bar):

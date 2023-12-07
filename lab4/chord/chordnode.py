@@ -147,24 +147,33 @@ class ChordNode:
                                   .format(self.node_id, int(sender)))
                 break
 
+            # if request[0] == constChord.LOOKUP_REP:
+            #     self.channel.send_to([str(sender)], (constChord.LOOKUP_REP, request[1]))
+            #     continue
+
             #@TODO: Lookup recursively
             if request[0] == constChord.LOOKUP_REQ:  # A lookup request
+                baseSender = request[2]
+                
                 self.logger.info("Node {:04n} received LOOKUP {:04n} from {:04n}."
                                  .format(self.node_id, int(request[1]), int(sender)))
 
                 # look up and return local successor 
                 next_id: int = self.local_successor_node(request[1])
 
-                if(request[1] > self.node_id):
-                    # if i am not the target node, recursively search for the actual node
-                    print("\nLOOKUP Received: Current ID: " + str(self.node_id) + ", Next ID is: " + str(next_id))
+                predecessor = self.finger_table[0]
 
-                    self.channel.send_to([str(next_id)], (constChord.LOOKUP_REQ, request[1]))
-                else:
-                    # else return my own address
+                if(self.node_id >= request[1] and predecessor < request[1]):
+                    # i must be the one maintaining the searched node
                     print("\nLOOKUP Received: Current ID: " + str(self.node_id))
-                    print("Matching Endpoint Found: " + str(self.node_id) + "for Key " + str(request[1]))
-                    self.channel.send_to([sender], (constChord.LOOKUP_REP, request[1]))
+                    print("Matching Endpoint Found: " + str(self.node_id) + " for Key " + str(request[1]))
+                    print("Sender: " + str(sender))
+                    self.channel.send_to([str(baseSender)], (constChord.LOOKUP_REP, request[1], baseSender))
+                    print("Sent")
+                else:
+                    # if i am not the target node, recursively search further
+                    print("\nLOOKUP Received: Current ID: " + str(self.node_id) + ", Next ID is: " + str(next_id))
+                    self.channel.send_to([str(next_id)], (constChord.LOOKUP_REQ, request[1], baseSender))
 
                 # Finally do a sanity check
                 if not self.channel.exists(next_id):  # probe for existence

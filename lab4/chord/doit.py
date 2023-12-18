@@ -25,8 +25,6 @@ class DummyChordClient:
     def __init__(self, channel):
         self.channel = channel
         self.node_id = channel.join('client')
-        #self.client_id = channel.join('node')
-        #print("joined node on id " + str(self.client_id))
 
     def enter(self):
         self.channel.bind(self.node_id)
@@ -38,23 +36,27 @@ class DummyChordClient:
         #print(channels)
 
         # Generate a random Key to search for and a node to send to
-        randomKey = randint(0, 100)
+        #randomKey = randint(0, 100)
         randomNode = randint(0, 100)
 
         while(randomNode not in nodes):
             randomNode = randint(0, 100)
 
-        while(randomKey not in nodes):
-            randomKey = randint(0, 100)
+        #while(randomKey not in nodes):
+        randomKey = randint(0, self.channel.MAXPROC)
 
         print("\nlooking for random Key " + str(randomKey) + " on Node " + str(randomNode) + "\n")
 
         # send request to random node with random key
-        self.channel.send_to([str(randomNode)], (constChord.LOOKUP_REQ, randomKey))
+        self.channel.send_to([str(randomNode)], (constChord.LOOKUP_REQ, randomKey, self.node_id))
 
-        # self.channel.send_to(  # a final multicast
-        #     {i.decode() for i in list(self.channel.channel.smembers('node'))},
-        #     constChord.STOP)
+        answer = self.channel.receive_from_any()[1]
+
+        print("Received: " + str(answer))
+
+        self.channel.send_to(  # a final multicast
+            {i.decode() for i in list(self.channel.channel.smembers('node'))},
+            constChord.STOP)
 
 
 def create_and_run(num_bits, node_class, enter_bar, run_bar):

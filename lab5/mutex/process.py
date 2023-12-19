@@ -1,8 +1,9 @@
 import logging
 import random
+import threading
 import time
 
-from constMutex import ENTER, RELEASE, ALLOW, HEALTHY
+from constMutex import ENTER, RELEASE, ALLOW, HEALTHY,HEALTHCHECK
 
 
 class Process:
@@ -38,7 +39,8 @@ class Process:
         self.all_processes: list = []  # All procs in the proc group
         self.other_processes: list = []  # Needed to multicast to others
         self.queue = []  # The request queue list
-        self.timer=0
+        self.health_timer=float('inf')
+        self.healthy_processes=set()
         self.clock = 0  # The current logical clock
         self.logger = logging.getLogger("vs2lab.lab5.mutex.process.Process")
 
@@ -65,24 +67,31 @@ class Process:
         self.__cleanup_queue()  # Sort the queue
         self.channel.send_to(self.other_processes, request_msg)  # Send request
     
+    def startTimer(self):
+        while True:
+            if (time.time()-self.health_timer > 3):
+                print("zeit abgelaufen")
+                self.other_processes=list(self.healthy_processes)
+                self.all_processes=list(self.healthy_processes)
+                self.all_processes.append(self.process_id)
+                self.all_processes.sort(key=lambda x: int(x))
+                print("Prozesses die noch alive sind: "+str(self.other_processes))
+                self.health_timer=float('inf')
+                if(self.queue[0][1] not in self.all_processes):
+                    del (self.queue[0])
+                break
+            
     def __send_healthcheck(self):
         self.clock = self.clock + 1  # Increment clock value
-        request_msg = (self.clock, self.process_id, HEALTHY)
+        request_msg = (self.clock, self.process_id, HEALTHCHECK)
         self.queue.append(request_msg)  # Append request to queue
         self.__cleanup_queue()  # Sort the queue
         self.channel.send_to(self.other_processes, request_msg)  # Send request
-        healthy_processes=[]
-        while len(healthy_processes)<len(self.other_processes):
-            receive = self.channel.receive_from(self.other_processes,2)
-            if receive and receive[1][2]==HEALTHY:
-                healthy_processes.append(receive[1][1])
-            if not receive:
-                self.other_processes=list(set(healthy_processes) & set(self.other_processes))
-                self.all_processes=list(set(healthy_processes)& set(self.all_processes))
-                self.all_processes.append(self.process_id)
-                self.queue = [x for x in self.queue if x[1] in self.all_processes]#lösche alle Nachrichten des abgestürzten Prozess
-                print("Prozesses die noch alive sind: "+str(self.other_processes))
-                break
+        self.healthy_processes=set()
+        self.health_timer=time.time()
+        countdownThread = threading.Thread(target=self.startTimer)
+        countdownThread.start()
+        
 
     def __allow_to_enter(self, requester):
         self.clock = self.clock + 1  # Increment clock value
@@ -103,14 +112,13 @@ class Process:
 
     def __allowed_to_enter(self):
          # See who has sent a message (the set will hold at most one element per sender)
-    
+        #print("Prozess "+str(self.process_id)+" aktuelle Q: "+str(self.queue))
         processes_with_later_message = set([req[1] for req in self.queue[1:]])
         # Access granted if this process is first in queue and all others have answered (logically) later
         first_in_queue = self.queue[0][1] == self.process_id
         if first_in_queue:
-            print("aktuelle Q"+str(self.queue))
-            print("Anzahl anderer Prozesse: "+str(len(self.other_processes)))
-            print("Anzahl individueller Nachrichten: "+str(len(processes_with_later_message)))
+            print("erhaltene Nachrichten: "+str(len(processes_with_later_message)))
+            print("anzahl andere Prozesse: "+str(len(self.other_processes)))
         all_have_answered = len(processes_with_later_message) >= len(self.other_processes)
         return first_in_queue and all_have_answered
 
@@ -139,11 +147,12 @@ class Process:
                 # assure release requester indeed has access (his ENTER is first in queue)
                 assert self.queue[0][1] == msg[1] and self.queue[0][2] == ENTER, 'State error: inconsistent remote RELEASE'
                 del (self.queue[0])  # Just remove first message
-            elif msg[2]== HEALTHY:
-                self.queue.append(msg)
+            elif msg[2]== HEALTHCHECK:
                 self.clock = self.clock + 1  # Increment clock value
                 reply = (self.clock, self.process_id, HEALTHY)
-                self.channel.send_to(msg[1], reply)  #send health reply
+                self.channel.send_to([msg[1]], reply)  #send health reply
+            elif msg[2]== HEALTHY:
+                self.healthy_processes.add(msg[1])
 
             self.__cleanup_queue()  # Finally sort and cleanup the queue
         else:        
@@ -167,6 +176,7 @@ class Process:
         while True:
             # Enter the critical section if there are more than one process left
             # and random is true
+                        
             if len(self.all_processes) > 1 and \
                     random.choice([True, False]):
                 self.logger.debug("{} wants to ENTER CS at CLOCK {}."

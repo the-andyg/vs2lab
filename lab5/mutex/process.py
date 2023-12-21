@@ -76,9 +76,10 @@ class Process:
                 self.all_processes.append(self.process_id)
                 self.all_processes.sort(key=lambda x: int(x))
                 print("Prozesses die noch alive sind: "+str(self.other_processes))
+                print("Queue vorher: "+str(self.queue))
                 self.health_timer=float('inf')
-                if(self.queue[0][1] not in self.all_processes):
-                    del (self.queue[0])
+                self.queue= [x for x in self.queue if x[1] in self.all_processes]
+                print("Queue danach: "+str(self.queue))
                 break
             
     def __send_healthcheck(self):

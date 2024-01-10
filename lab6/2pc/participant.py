@@ -56,8 +56,10 @@ class Participant:
 
         if not msg:  # Crashed coordinator - give up entirely
             self.determineCoordinator()
+            return
             # decide to locally abort (before doing anything)
             #decision = LOCAL_ABORT
+            #decision = self.state
 
         else:  # Coordinator requested to vote, joint commit starts
             assert msg[1] == VOTE_REQUEST
@@ -85,7 +87,9 @@ class Participant:
                     msg = self.channel.receive_from(self.coordinator, TIMEOUT)
                     if not msg:  # Crashed coordinator
                         self.determineCoordinator()
-                decision = msg[1]
+                        return
+                    else:
+                        decision = msg[1]
 
         # Change local state based on the outcome of the joint commit protocol
         # Note: If the protocol has blocked due to coordinator crash,

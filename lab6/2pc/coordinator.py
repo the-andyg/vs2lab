@@ -45,7 +45,7 @@ class Coordinator:
         return self.beginInit()
     
     def beginInit(self):
-        if random.random() > 3/4:  # simulate a crash
+        if random.random() > 4/4:  # simulate a crash
             return "Coordinator crashed in state INIT."
 
         # Request local votes from all participants
@@ -54,7 +54,7 @@ class Coordinator:
         return self.readyState()
         
     def readyState(self):
-        if random.random() > 2/3:  # simulate a crash
+        if random.random() > 0:  # simulate a crash
             return "Coordinator crashed in state WAIT."
 
         # Collect votes from all participants
@@ -81,12 +81,12 @@ class Coordinator:
             else:
                 assert msg[1] == READY_COMMIT
                 yet_to_receive.remove(msg[0])
-        return self.globalCommitState()
+        return self.globalCommitState("GLOBAL_COMMIT")
     
-    def globalCommitState(self):
+    def globalCommitState(self,reason):
         self.channel.send_to(self.participants, GLOBAL_COMMIT)
-        return "Coordinator {} terminated in state COMMIT."\
-            .format(self.coordinator)
+        return "Coordinator {} terminated in state COMMIT. Reason: {}."\
+                    .format(self.coordinator, reason)
             
     def globalAbortState(self,reason):
         self._enter_state('ABORT')

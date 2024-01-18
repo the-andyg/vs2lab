@@ -87,7 +87,6 @@ class Participant:
                     msg = self.channel.receive_from(self.coordinator, TIMEOUT)
                     if not msg:  # Crashed coordinator
                         self.determineCoordinator()
-                        return
                     else:
                         decision = msg[1]
 
@@ -133,6 +132,7 @@ class Participant:
             if(self.state=="INIT" or self.state=="READY"):
                 self.beginInit()
             elif self.state=="ABORT":
+                print("Koordinator in abort")
                 self.globalAbortState()
             else:
                 self.globalCommitState()
@@ -163,6 +163,15 @@ class Participant:
 
         self._enter_state('PRECOMMIT')
         self.channel.send_to(self.all_participants, PREPARE_COMMIT)
+        yet_to_receive = list(self.all_participants)
+        while len(yet_to_receive) > 0:
+            msg = self.channel.receive_from(self.all_participants, TIMEOUT)
+            if (not msg):
+                reason = "timeout"
+                return self.globalCommitState()
+            else:
+                assert msg[1] == READY_COMMIT
+                yet_to_receive.remove(msg[0])
         return self.globalCommitState()
     
     def globalCommitState(self):
@@ -171,6 +180,7 @@ class Participant:
             .format(self.coordinator)
             
     def globalAbortState(self,reason):
+        print("neue koordinator global abort")
         self._enter_state('ABORT')
         self.channel.send_to(self.all_participants, GLOBAL_ABORT)
         return "Coordinator {} terminated in state ABORT. Reason: {}."\

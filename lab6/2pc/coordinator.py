@@ -72,6 +72,15 @@ class Coordinator:
 
         self._enter_state('PRECOMMIT')
         self.channel.send_to(self.participants, PREPARE_COMMIT)
+        yet_to_receive = list(self.participants)
+        while len(yet_to_receive) > 0:
+            msg = self.channel.receive_from(self.participants, TIMEOUT)
+            if (not msg):
+                reason = "timeout"
+                return self.globalCommitState(reason)
+            else:
+                assert msg[1] == READY_COMMIT
+                yet_to_receive.remove(msg[0])
         return self.globalCommitState()
     
     def globalCommitState(self):

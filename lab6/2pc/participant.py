@@ -57,6 +57,7 @@ class Participant:
         if not msg:  # Crashed coordinator - give up entirely
             self.determineCoordinator()
             return
+            
             # decide to locally abort (before doing anything)
             #decision = LOCAL_ABORT
             #decision = self.state
@@ -87,6 +88,8 @@ class Participant:
                     msg = self.channel.receive_from(self.coordinator, TIMEOUT)
                     if not msg:  # Crashed coordinator
                         self.determineCoordinator()
+                        return
+                        
                     else:
                         decision = msg[1]
 
@@ -107,6 +110,7 @@ class Participant:
 
         if not msg:  # Crashed coordinator - give up entirely
             self.determineCoordinator()
+            return
             # decide to locally abort (before doing anything)
             #decision = LOCAL_ABORT
 
@@ -125,17 +129,59 @@ class Participant:
         for participant in self.all_participants:
             if int(participant) < int(min):
                 min = participant
-        self.coordinator = min
-        self.all_participants.remove(self.coordinator)
-        print("new coordinator: "+self.coordinator)
-        if self.coordinator == id:
-            if(self.state=="INIT" or self.state=="READY"):
-                self.beginInit()
-            elif self.state=="ABORT":
-                print("Koordinator in abort")
-                self.globalAbortState()
+        self.coordinator={min}
+        self.all_participants.remove(min)
+        print("new coordinator: "+min)
+        if self.coordinator == {id}:
+            print("ich bins tim")
+            self.channel.send_to(self.all_participants, self.state)
+            if(self.state != "PRECOMMIT"):
+                yet_to_receive = list(self.all_participants)
+                while len(yet_to_receive) > 0:
+                    msg = self.channel.receive_from(self.all_participants, TIMEOUT)
+                    if (not msg):
+                        reason = "timeout"
+                    else:
+                        assert msg[1] == VOTE_ABORT or msg[1]==VOTE_COMMIT
+                        yet_to_receive.remove(msg[0])
+                self.globalAbortState("Coordinator crashed")
             else:
+                yet_to_receive = list(self.all_participants)
+                while len(yet_to_receive) > 0:
+                    msg = self.channel.receive_from(self.all_participants, TIMEOUT)
+                    if (not msg):
+                        reason = "timeout"
+                    else:
+                        assert msg[1] == READY_COMMIT
+                        yet_to_receive.remove(msg[0])
                 self.globalCommitState()
+        else:
+            msg = self.channel.receive_from(self.coordinator, TIMEOUT)
+            if(not msg):
+                print("Vallah Koordinator sendet nicht")
+            if msg[1]=="INIT":
+                self.channel.send_to(self.coordinator, VOTE_COMMIT)
+            elif msg[1]=="WAIT":
+                self.channel.send_to(self.coordinator, VOTE_COMMIT)
+            elif msg[1]=="ABORT":
+                self.channel.send_to(self.coordinator, VOTE_ABORT)
+
+            msg = self.channel.receive_from(self.coordinator, TIMEOUT)
+            if(msg[1]==GLOBAL_COMMIT):
+                self._enter_state('COMMIT')
+                print( "Participant {} terminated in state {} due to {}.".format(
+                    self.participant, self.state, "GLOBAL_COMMIT"))
+            else:
+                self._enter_state('ABORT')
+                print( "Participant {} terminated in state {} due to {}.".format(
+                    self.participant, self.state, "GLOBAL_ABORT"))
+            # if(self.state=="INIT" or self.state=="READY"):
+            #     self.beginInit()
+            # elif self.state=="ABORT":
+            #     print("Koordinator in abort")
+            #     self.globalAbortState()
+            # else:
+            #     self.globalCommitState()
         
     def beginInit(self):
         # Request local votes from all participants
